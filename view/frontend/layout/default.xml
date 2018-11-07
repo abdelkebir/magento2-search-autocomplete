@@ -1,7 +1,11 @@
 <page xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="../../../../../../../lib/internal/Magento/Framework/View/Layout/etc/page_configuration.xsd" >
 	<body>
-		<referenceContainer name="before.body.end">
-        	<block class="Godogi\SearchAutocomplete\Block\SearchAutocomplete" name="search.autocomplete" before="-" template="search/autocomplete.phtml" />
-    	</referenceContainer>
+		<referenceContainer name="header-wrapper">
+			<referenceBlock name="top.search" remove="true"/>
+			<!--
+            <block class="Magento\Framework\View\Element\Template" name="top.search" as="" template="Magento_Search::form.mini.phtml" />
+            -->
+            <block class="Godogi\SearchAutocomplete\Block\SearchAutocomplete" name="search.autocomplete" after="logo" template="search/autocomplete.phtml" />
+        </referenceContainer>
 	</body>
 </page>
