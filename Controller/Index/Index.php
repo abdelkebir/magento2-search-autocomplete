@@ -8,37 +8,55 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $_reviewFactory;
     protected $_storeManager;
     protected $_imageBuilder;
+    protected $_productVisibility;
+    protected $_categoryFactory;
 
     public function __construct(
-            \Magento\Framework\App\Action\Context $context,
-            \Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory,
-            \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
-            \Magento\Review\Model\ReviewFactory $reviewFactory,
-            \Magento\Store\Model\StoreManagerInterface $storeManager,
-            \Magento\Catalog\Block\Product\ImageBuilder $imageBuilder)
+        \Magento\Framework\App\Action\Context $context,
+        \Magento\Framework\Controller\Result\JsonFactory $resultJsonFactory,
+        \Magento\Catalog\Model\ResourceModel\Product\CollectionFactory $productCollectionFactory,
+        \Magento\Review\Model\ReviewFactory $reviewFactory,
+        \Magento\Store\Model\StoreManagerInterface $storeManager,
+        \Magento\Catalog\Block\Product\ImageBuilder $imageBuilder,
+        \Magento\Catalog\Model\Product\Visibility $productVisibility,
+        \Magento\Catalog\Model\CategoryFactory $categoryFactory)
     {
         $this->_resultJsonFactory   =   $resultJsonFactory;
         $this->_productCollectionFactory = $productCollectionFactory;
         $this->_reviewFactory = $reviewFactory;
-        $this->_storeManager = $storeManager;  
-        $this->_imageBuilder = $imageBuilder;  
+        $this->_storeManager = $storeManager;
+        $this->_imageBuilder = $imageBuilder;
+        $this->_productVisibility = $productVisibility;
+        $this->_categoryFactory = $categoryFactory;
         parent::__construct($context);
     }
     public function execute()
     {
-        $collection = $this->_productCollectionFactory->create()
-                            ->addAttributeToSelect('*')
-                            ->addAttributeToFilter('name', array('like'=>'%Pullove%'));
+        $postMessage = $this->getRequest()->getPost();
 
-        $collection ->setPageSize(5) // only get 10 products 
-                    ->setCurPage(1);  // first page (means limit 0,10)
+        $query = preg_replace('/[^A-Za-z0-9\ \_\'\-]/', '', $postMessage['query']);
+        $category = preg_replace('/[^a-z0-9]/', '', $postMessage['category']);
+
+
+        if($category=='all'){
+            $collection = $this->_productCollectionFactory->create()
+                            ->addAttributeToSelect('*')
+                            ->addAttributeToFilter('name', array('like'=>'%'.$query.'%'));
+        }else{
+            $collection = $this->getProductCollection($category);
+            $collection->addAttributeToFilter('name', array('like'=>'%'.$query.'%'));
+        }
+        $collection->setVisibility($this->_productVisibility->getVisibleInSiteIds());
+        
+        $collection ->setPageSize(5)
+                    ->setCurPage(1);
 
         $productList = [];
         $i = 1;
         
         foreach ($collection as $product) {
-            $productList[$i]['name']        = $product->getName();
-            $productList[$i]['price']       = number_format((float)$product->getPrice(), 2, '.', '');;
+            $productList[$i]['name']        = str_ireplace($query,'<b>'.$query.'</b>',$product->getName());
+            $productList[$i]['price']       = number_format((float)$product->getFinalPrice(), 2, '.', '');
             $productList[$i]['url']         = $product->getProductUrl();
             $productList[$i]['thumbnail']   = $this->getImage($product, 'category_page_list')->getImageUrl();
             $this->_reviewFactory->create()->getEntitySummary($product, $this->_storeManager->getStore()->getId());
@@ -57,5 +75,14 @@ class Index extends \Magento\Framework\App\Action\Action
         return $this->_imageBuilder->setProduct($product)
             ->setImageId($imageId)
             ->create();
+    }
+    public function getCategory($categoryId)
+    {
+        $category = $this->_categoryFactory->create()->load($categoryId);
+        return $category;
+    }
+    public function getProductCollection($categoryId)
+    {
+         return $this->getCategory($categoryId)->getProductCollection()->addAttributeToSelect('*'); 
     }
 }
