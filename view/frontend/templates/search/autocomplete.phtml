@@ -1,0 +1,101 @@
+<p>Search AUtocomplete TEst</p>
+
+<script type="text/javascript">
+require(['jquery', 'domReady!'], function($){
+	var searchControlElement = $('#search_mini_form .field.search .control').first();
+	var searchCategoriesHtml = '<div id="searchCategories">';
+	searchCategoriesHtml += '<select>';
+	searchCategoriesHtml += '<option value="all">All</option>';
+	<?php 
+		foreach($this->getCategoryCollection(true, 2, false, false) as $category){
+			?>
+				searchCategoriesHtml += '<option value="<?php echo $category->getId(); ?>"><?php echo addslashes($category->getName()); ?></option>';
+			<?php 
+		}
+	?>
+	searchCategoriesHtml += '</select></div>';
+	searchControlElement.prepend(searchCategoriesHtml);
+	searchControlElement.append('<div id="searchAutocomplete" style="display:none;"><ul></ul></div>');
+	$('#search_autocomplete').remove();
+
+
+
+	$( "#search" ).focus(function() {
+	  	var searchInput = $(this);
+	  	var searchInputValue = searchInput.val().replace("/^[a-zA-Z0-9 _-]+$/i", "");
+	  	if(searchInputValue.length >=3){
+	  		$('#searchAutocomplete').show();
+	  	}else{
+	  		$('#searchAutocomplete').hide();
+	  	}
+	});
+	$( "#search" ).change(function() {
+	  	var searchInput = $(this);
+	  	var searchInputValue = searchInput.val().replace("/^[a-zA-Z0-9 _-]+$/i", "");
+	  	if(searchInputValue.length >=3){
+	  		url = "<?php echo $this->getAjaxUrl(); ?>";
+	  		$.ajax({
+	           	type: "POST",
+	           	url: url,
+	           	data: $("#lc-livechatform").serialize(),
+	           	success: function(data){
+	           		var searchResultHtml = '';
+	           		var size = Object.keys(data).length;
+  					console.log(size);
+	           		for(let i=1; i<=size; i++){
+	           			console.log('**');
+	           			searchResultHtml += '<li data-url="'+data[i]['url']+'">';
+	           			searchResultHtml += '<div class="sa-image"><img src="'+data[i]['thumbnail']+'"></div>';
+	           			searchResultHtml += '<div class="sa-title"><p>'+data[i]['name']+'<p></div>';
+	           			if(data[i]['rating']){
+	           				searchResultHtml += '<div class="sa-rating"><p>'+data[i]['rating']+'<p></div>';
+	           			}
+	           			searchResultHtml += '<div class="sa-price"><p>'+data[i]['price']+'<p></div>';
+	           			searchResultHtml += '</li>';
+	           			$('#searchAutocomplete ul').first().html(searchResultHtml);
+	           		}
+	           		console.log(data);
+	           	},
+	            error: function (data) {
+	                console.log(data);
+	            }
+	  		});
+	  	}
+	});
+});
+</script>
+<style type="text/css">
+#searchCategories {
+	display: inline-block;
+	float: left;
+	width: 30%;
+}
+#search {
+	display: inline-block;
+	position: relative;
+	left: unset;
+	width: 70%;
+	float: right;
+}
+.block-search {
+	
+}
+#searchAutocomplete{
+	
+}
+#searchAutocomplete ul{
+	margin: 0;
+}
+#searchAutocomplete .sa-image{
+
+}
+#searchAutocomplete .sa-title{
+	
+}
+#searchAutocomplete .sa-price{
+	
+}
+@media and (min-width: 768px) {
+
+}
+</style>
