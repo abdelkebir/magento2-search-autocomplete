@@ -24,9 +24,9 @@ $helper = $this->helper(\Magento\Search\Helper\Data::class);
 						<select>
 							<option value="all">All</option>
 							<?php 
-								foreach($this->getCategoryCollection(true, 2, false, false) as $category){
+								foreach($this->getCategories() as $category){
 									?>
-										<option value="<?php echo $category->getId(); ?>"><?php echo addslashes($category->getName()); ?></option>
+										<option value="<?php echo $category->getId(); ?>"><?php echo $category->getName(); ?></option>
 									<?php 
 								}
 							?>
@@ -39,7 +39,6 @@ $helper = $this->helper(\Magento\Search\Helper\Data::class);
                            placeholder="<?= /* @escapeNotVerified */ __('Search entire store here...') ?>"
                            class="input-text"
                            maxlength="<?= /* @escapeNotVerified */ $helper->getMaxQueryLength() ?>"
-                           role="combobox"
                            autocomplete="off"/>
                 </div>
             </div>
@@ -60,8 +59,11 @@ require(['jquery', 'domReady!'], function($){
 	searchControlElement.append('<div id="searchAutocomplete" style="display:none;"><ul></ul><button type="submit"><?= /* @escapeNotVerified */ __('View All Results') ?></button></div>');
 	$('#search_autocomplete').remove();
 	$('#search').unbind();
-	$( "#search" ).blur(function() {
-	  	$('#searchAutocomplete').hide();
+	$(window).click(function() {
+		$('#searchAutocomplete').hide();
+	});
+	$('.block.block-search').click(function(event){
+	    event.stopPropagation();
 	});
 	$('#search').bind('input', function(){
   		var searchInput = $(this);
@@ -89,14 +91,21 @@ require(['jquery', 'domReady!'], function($){
 	           			searchResultHtml += '</li>';
 	           			$('#searchAutocomplete ul').first().html(searchResultHtml);
 	           		}
+	           		$( "#searchAutocomplete ul li" ).on( "click", function() {
+				  		window.location = $(this).data('url');
+					});
 	           		if(size > 0){
 	           			$('#searchAutocomplete').show();
-	           		}
-	           	},
+					}else{
+						$('#searchAutocomplete').hide();
+					}
+				},
 	            error: function (data) {
 	                console.log(data);
 	            }
 	  		});
+	  	}else{
+	  		$('#searchAutocomplete').hide();
 	  	}
 	});
 	$("#search").on("focus", function(){
@@ -112,7 +121,6 @@ require(['jquery', 'domReady!'], function($){
 	           		console.log(data);
 	           		var searchResultHtml = '';
 	           		var size = Object.keys(data).length;
-	           		console.log('size'+size);
 	           		for(let i=1; i<=size; i++){
 	           			searchResultHtml += '<li data-url="'+data[i]['url']+'">';
 	           			searchResultHtml += '<div class="sa-image"><img src="'+data[i]['thumbnail']+'"></div>';
@@ -128,14 +136,64 @@ require(['jquery', 'domReady!'], function($){
 	           		}
 	           		if(size > 0){
 	           			$('#searchAutocomplete').show();
-	           		}
-	           	},
+					}else{
+						$('#searchAutocomplete').hide();
+					}
+					$( "#searchAutocomplete ul li" ).on( "click", function() {
+				  		window.location = $(this).data('url');
+					});
+				},
 	            error: function (data) {
 	                console.log(data);
 	            }
 	  		});
+	  	}else{
+	  		$('#searchAutocomplete').hide();
 	  	}
-	})
+	});
+	$("#searchCategories select").first().on("change", function(){
+		var searchInput = $('#search');
+	  	var searchInputValue = searchInput.val().replace("/^[a-zA-Z0-9 _-]+$/i", "");
+	  	if(searchInputValue.length >=3){
+	  		url = "<?php echo $this->getAjaxUrl(); ?>";
+	  		$.ajax({
+	           	type: "POST",
+	           	url: url,
+	           	data: {query: searchInputValue, category: $('#searchCategories select').first().val()},
+	           	success: function(data){
+	           		console.log(data);
+	           		var searchResultHtml = '';
+	           		var size = Object.keys(data).length;
+	           		for(let i=1; i<=size; i++){
+	           			searchResultHtml += '<li data-url="'+data[i]['url']+'">';
+	           			searchResultHtml += '<div class="sa-image"><img src="'+data[i]['thumbnail']+'"></div>';
+	           			searchResultHtml += '<div class="sa-prop">';
+		           			searchResultHtml += '<div class="sa-title"><p>'+data[i]['name']+'</p></div>';
+		           			if(data[i]['rating']){
+		           				searchResultHtml += '<div class="sa-rating"><div class="rating-summary"><div class="rating-result" title="'+data[i]['rating']+'%"><span style="width:'+data[i]['rating']+'%"><span>'+data[i]['rating']+'%</span></span></div></div></div>';
+		           			}
+		           			searchResultHtml += '<div class="sa-price"><p>£'+data[i]['price']+'<p></div>';
+		           		searchResultHtml += '</div>';
+	           			searchResultHtml += '</li>';
+	           			$('#searchAutocomplete ul').first().html(searchResultHtml);
+	           		}
+	           		if(size > 0){
+	           			$('#searchAutocomplete').show();
+					}else{
+						$('#searchAutocomplete').hide();
+					}
+					$( "#searchAutocomplete ul li" ).on( "click", function() {
+				  		window.location = $(this).data('url');
+					});
+				},
+	            error: function (data) {
+	                console.log(data);
+	            }
+	  		});
+	  	}else{
+	  		$('#searchAutocomplete').hide();
+	  	}
+	});
 });
 </script>
 <style type="text/css">
