@@ -10,6 +10,7 @@ class Index extends \Magento\Framework\App\Action\Action
     protected $_imageBuilder;
     protected $_productVisibility;
     protected $_categoryFactory;
+    protected $_priceHelper;
 
     public function __construct(
         \Magento\Framework\App\Action\Context $context,
@@ -19,7 +20,8 @@ class Index extends \Magento\Framework\App\Action\Action
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Catalog\Block\Product\ImageBuilder $imageBuilder,
         \Magento\Catalog\Model\Product\Visibility $productVisibility,
-        \Magento\Catalog\Model\CategoryFactory $categoryFactory)
+        \Magento\Catalog\Model\CategoryFactory $categoryFactory,
+    	\Magento\Framework\Pricing\Helper\Data $priceHelper)
     {
         $this->_resultJsonFactory   =   $resultJsonFactory;
         $this->_productCollectionFactory = $productCollectionFactory;
@@ -28,6 +30,7 @@ class Index extends \Magento\Framework\App\Action\Action
         $this->_imageBuilder = $imageBuilder;
         $this->_productVisibility = $productVisibility;
         $this->_categoryFactory = $categoryFactory;
+        $this->_priceHelper = $priceHelper;
         parent::__construct($context);
     }
     public function execute()
@@ -56,7 +59,7 @@ class Index extends \Magento\Framework\App\Action\Action
         
         foreach ($collection as $product) {
             $productList[$i]['name']        = str_ireplace($query,'<b>'.$query.'</b>',$product->getName());
-            $productList[$i]['price']       = number_format((float)$product->getFinalPrice(), 2, '.', '');
+            $productList[$i]['price']       = $this->_priceHelper->currency(number_format($product->getFinalPrice(),2),true,false);
             $productList[$i]['url']         = $product->getProductUrl();
             $productList[$i]['thumbnail']   = $this->getImage($product, 'category_page_list')->getImageUrl();
             $this->_reviewFactory->create()->getEntitySummary($product, $this->_storeManager->getStore()->getId());
